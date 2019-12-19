@@ -21055,7 +21055,11 @@ var Tracer = function (_opentracing$Tracer) {
                     // Update the clock state if there's info from the report
                     if (res) {
                         if (res.timing && res.timing.receive_micros && res.timing.transmit_micros) {
+                            // Handle thrift transport timing response.
                             _this12._clockState.addSample(originMicros, res.timing.receive_micros, res.timing.transmit_micros, destinationMicros);
+                        } else if (res.receiveTimestamp && res.transmitTimestamp) {
+                            // Handle protobuf transport timing response.
+                            _this12._clockState.addSample(originMicros, res.receiveTimestamp.seconds * 1e6 + res.receiveTimestamp.nanos / 1e3, res.transmitTimestamp.seconds * 1e6 + res.transmitTimestamp.nanos / 1e3, destinationMicros);
                         } else {
                             // The response does not have timing information. Disable
                             // the clock state assuming there'll never be timing data
@@ -21064,10 +21068,15 @@ var Tracer = function (_opentracing$Tracer) {
                         }
 
                         if (res.errors && res.errors.length > 0) {
+                            // Handle thrift errors.
                             _this12._warn('Errors in report', res.errors);
+                        } else if (res.errorsList && res.errorsList.length > 0) {
+                            // Handle protobuf errors.
+                            _this12._warn('Errors in report', res.errorsList);
                         }
 
                         if (res.commandsList && res.commandsList.length > 0) {
+                            // Handle both thrift and protobuf commands response.
                             if (res.commandsList[0].devMode && _this12.options().disable_meta_event_reporting !== true) {
                                 _this12.options().meta_event_reporting = true;
                             }
